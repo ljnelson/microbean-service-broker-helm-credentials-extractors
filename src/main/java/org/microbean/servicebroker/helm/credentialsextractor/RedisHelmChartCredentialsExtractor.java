@@ -14,7 +14,7 @@
  * implied.  See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package org.microbean.servicebroker.helm;
+package org.microbean.servicebroker.helm.credentialsextractor;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -34,6 +34,9 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.api.model.Secret;
 
 import org.microbean.servicebroker.api.ServiceBrokerException;
+
+import org.microbean.servicebroker.helm.CredentialsExtractor;
+import org.microbean.servicebroker.helm.Helm;
 
 import org.microbean.servicebroker.helm.annotation.Chart;
 
