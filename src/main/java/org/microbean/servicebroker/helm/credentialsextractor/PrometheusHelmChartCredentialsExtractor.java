@@ -37,13 +37,13 @@ import org.microbean.servicebroker.helm.Helm;
 import org.microbean.servicebroker.helm.annotation.Chart;
 
 @ApplicationScoped
-@Chart("mongodb")
-public class MongoHelmChartCredentialsExtractor implements CredentialsExtractor {
+@Chart("prometheus")
+public class PrometheusHelmChartCredentialsExtractor implements CredentialsExtractor {
 
-  private static final Pattern PATTERN = Pattern.compile("\\s*kubectl run .+ --host (\\S+)(\\s+-p\\s+(.+))?");
+  private static final Pattern PORT_PATTERN = Pattern.compile("The Prometheus server can be accessed via port (\\d+) on the following DNS name from within your cluster");
 
   @Inject
-  public MongoHelmChartCredentialsExtractor(final KubernetesClient kubernetesClient) {
+  public PrometheusHelmChartCredentialsExtractor(final KubernetesClient kubernetesClient) {
     super();
   }
 
@@ -54,20 +54,20 @@ public class MongoHelmChartCredentialsExtractor implements CredentialsExtractor 
       final List<String> notes = status.getNotes();
       if (notes != null && !notes.isEmpty()) {
         credentials = new HashMap<>();
-        credentials.put("port", "27017"); // the chart hardcodes this
-        for (String line : notes) {
-          if (line != null) {
-            Matcher matcher = null;
-            matcher = PATTERN.matcher(line);
-            assert matcher != null;
-            if (matcher.find()) {
-              final String host = matcher.group(1);
-              credentials.put("host", host);
-              credentials.put("hostname", host);
-              if (matcher.groupCount() > 2) // if a password was found
-                credentials.put("password", matcher.group(3));
-              break;
+        for (int i = 0; i < notes.size(); i++) {
+          String line = notes.get(i);
+          Matcher matcher = null;
+          matcher = PORT_PATTERN.matcher(line);
+          assert matcher != null;
+          if (matcher.find()) {
+            final String port = matcher.group(1);
+            credentials.put("port", port);
+            if (i < notes.size() - 1) {
+              String hostLine = notes.get(++i);
+              credentials.put("host", hostLine);
+              credentials.put("hostname", hostLine);
             }
+            break;
           }
         }
       }
