@@ -64,8 +64,11 @@ public class MongoHelmChartCredentialsExtractor implements CredentialsExtractor 
               final String host = matcher.group(1);
               credentials.put("host", host);
               credentials.put("hostname", host);
-              if (matcher.groupCount() > 2) // if a password was found
-                credentials.put("password", matcher.group(3));
+              if (matcher.groupCount() > 2) {
+                String password = matcher.group(3);
+                if (password != null)
+                  credentials.put("password", password);
+              }
               break;
             }
           }
@@ -74,4 +77,5 @@ public class MongoHelmChartCredentialsExtractor implements CredentialsExtractor 
     }
     return credentials;
   }
+
 }
