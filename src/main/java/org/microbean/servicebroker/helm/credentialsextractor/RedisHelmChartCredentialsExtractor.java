@@ -31,7 +31,13 @@ import javax.inject.Inject;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
+
+import io.fabric8.kubernetes.api.model.DoneableSecret;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretList;
 
 import org.microbean.servicebroker.api.ServiceBrokerException;
 
@@ -111,9 +117,27 @@ public class RedisHelmChartCredentialsExtractor implements CredentialsExtractor 
     }
     byte[] returnValue = null;
     if (this.kubernetesClient != null && secretName != null && key != null) {
-      final String base64EncodedValue = this.kubernetesClient.secrets().inNamespace(namespace).withName(secretName).get().getData().get(key);
-      if (base64EncodedValue != null) {
-        returnValue = Base64.getDecoder().decode(base64EncodedValue);
+      // This DSL permits NullPointerExceptions! So we can't just
+      // fluently chain things together; we have to check for nulls
+      // along the way!
+      final MixedOperation<Secret, SecretList, DoneableSecret, Resource<Secret,DoneableSecret>> secrets = this.kubernetesClient.secrets();
+      if (secrets != null) {
+        final NonNamespaceOperation<Secret, SecretList, DoneableSecret, Resource<Secret, DoneableSecret>> namespacedSecrets = secrets.inNamespace(namespace);
+        if (namespacedSecrets != null) {
+          final Resource<Secret, DoneableSecret> secretResource = namespacedSecrets.withName(secretName);
+          if (secretResource != null) {
+            final Secret secret = secretResource.get();
+            if (secret != null) {
+              final Map<String, String> data = secret.getData();
+              if (data != null) {
+                final String base64EncodedValue = data.get(key);
+                if (base64EncodedValue != null) {
+                  returnValue = Base64.getDecoder().decode(base64EncodedValue);
+                }
+              }
+            }
+          }
+        }
       }
     }
     return returnValue;
